@@ -93,9 +93,14 @@ class YaraScanner:
             for m in matches:
                 matched_strings = []
                 for match_str in m.strings:
-                    offset = match_str[0]
-                    name = match_str[1]
-                    value = match_str[2]
+                    if hasattr(match_str, "offset"):
+                        offset = match_str.offset
+                        name = match_str.identifier
+                        value = match_str.data
+                    else:
+                        offset = match_str[0]
+                        name = match_str[1]
+                        value = match_str[2]
                     # Decode matched string values
                     val_str = value.decode("utf-8", errors="ignore")
                     matched_strings.append(f"{name}: {val_str}")
