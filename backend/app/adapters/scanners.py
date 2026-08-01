@@ -93,17 +93,20 @@ class YaraScanner:
             for m in matches:
                 matched_strings = []
                 for match_str in m.strings:
-                    if hasattr(match_str, "offset"):
-                        offset = match_str.offset
+                    if hasattr(match_str, "instances"):
                         name = match_str.identifier
-                        value = match_str.data
+                        for instance in match_str.instances:
+                            offset = instance.offset
+                            value = instance.matched_data
+                            val_str = value.decode("utf-8", errors="ignore")
+                            matched_strings.append(f"{name}: {val_str}")
                     else:
                         offset = match_str[0]
                         name = match_str[1]
                         value = match_str[2]
-                    # Decode matched string values
-                    val_str = value.decode("utf-8", errors="ignore")
-                    matched_strings.append(f"{name}: {val_str}")
+                        # Decode matched string values
+                        val_str = value.decode("utf-8", errors="ignore")
+                        matched_strings.append(f"{name}: {val_str}")
                     
                 results.append({
                     "rule_name": m.rule,
