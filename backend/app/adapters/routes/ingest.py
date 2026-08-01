@@ -1,4 +1,5 @@
 import uuid
+import hashlib
 from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
@@ -174,8 +175,6 @@ async def ingest_email(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Database insertion failed: {str(e)}"
         )
-        
-    import hashlib
     return ParsedEmailResponse(
         id=str(email.id),
         message_id=email.message_id,
