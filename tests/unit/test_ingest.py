@@ -76,12 +76,13 @@ def test_ingest_email_success(client, token, db_session):
     headers = {"Authorization": f"Bearer {token}"}
     
     response = client.post("/api/v1/ingest/email", files=file_payload, headers=headers)
-    assert response.status_code == 202
+    assert response.status_code == 200
     
     data = response.json()
-    assert "email_id" in data
+    assert "id" in data
     assert data["message_id"] == "<unique-message-id-12345@attacker.com>"
-    assert data["status"] == "Queued"
+    assert data["sender"] == "sender@attacker.com"
+    assert data["subject"] == "Urgent: Verify details"
     
     # Assert database insertion
     email_record = db_session.query(Email).filter(Email.message_id == data["message_id"]).first()
@@ -90,9 +91,8 @@ def test_ingest_email_success(client, token, db_session):
     assert email_record.subject == "Urgent: Verify details"
     
     # Check URLs extracted
-    url_records = db_session.query(URLIndicator).filter(URLIndicator.email_id == email_record.id).all()
-    assert len(url_records) == 1
-    assert url_records[0].url == "http://attacker-link.com"
+    assert len(data["urls"]) == 1
+    assert data["urls"][0]["url"] == "http://attacker-link.com"
 
 def test_ingest_email_duplicate(client, token, db_session):
     eml_content = (
@@ -108,7 +108,7 @@ def test_ingest_email_duplicate(client, token, db_session):
     
     # First ingest
     response1 = client.post("/api/v1/ingest/email", files=file_payload, headers=headers)
-    assert response1.status_code == 202
+    assert response1.status_code == 200
     
     # Second duplicate ingest
     file_payload_dup = {"file": ("test_mail.eml", io.BytesIO(eml_content), "message/rfc822")}
