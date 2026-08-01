@@ -6,11 +6,12 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.infra.db_session import get_db
-from app.domain.models import User, Email, Attachment, URLIndicator
+from app.domain.models import User, Email, Attachment, URLIndicator, YaraMatch, Alert
 from app.adapters.routes.auth import get_current_active_user
 from app.adapters.email_parser import parse_eml_bytes
 from app.adapters.storage import save_attachment_file
 from app.adapters.ioc_service import IOCExtractionService, ExtractedIOCs
+from app.adapters.threat_scanner import ThreatScannerService
 
 router = APIRouter(prefix="/api/v1/ingest", tags=["Ingestion"])
 
@@ -41,6 +42,7 @@ class ParsedEmailResponse(BaseModel):
     attachments: List[AttachmentInfo]
     urls: List[URLInfo]
     indicators: ExtractedIOCs
+    risk_score: float
 
 @router.post("/email", status_code=status.HTTP_200_OK, response_model=ParsedEmailResponse)
 async def ingest_email(
@@ -48,9 +50,9 @@ async def ingest_email(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Uploads a raw RFC822 (.eml) email file, parses it, extracts linter/threat IOCs 
-    via the IOC Extraction service, stores persistent records in PostgreSQL, 
-    and returns a structured JSON response.
+    """Uploads a raw RFC822 (.eml) email file, parses it, extracts threat IOCs, 
+    executes synchronous ClamAV and YARA scans, persists records in PostgreSQL 
+    including Alerts when threats are flagged, and returns a structured JSON response.
     """
     if not file.filename.endswith(".eml"):
         raise HTTPException(
@@ -96,6 +98,16 @@ async def ingest_email(
         headers_text=parsed_data["raw_header"],
         attachments=parsed_data["attachments"]
     )
+    
+    # Run threat scanner pipeline synchronously
+    scanner_service = ThreatScannerService()
+    scan_report = scanner_service.execute_pipeline(
+        subject=parsed_data["subject"],
+        body_text=parsed_data["body_text"],
+        body_html=parsed_data["body_html"],
+        headers=parsed_data["raw_header"],
+        attachments=parsed_data["attachments"]
+    )
         
     # Create Email entity
     email = Email(
@@ -111,13 +123,14 @@ async def ingest_email(
         received_at=parsed_data["received_at"],
         status="Completed"
     )
-    
     db.add(email)
     
     # Create Attachment entities and save payloads to secure disk path
     attachments_list = []
-    for att in parsed_data["attachments"]:
+    for idx, att in enumerate(parsed_data["attachments"]):
         att_id = uuid.uuid4()
+        scan_res = scan_report.attachments[idx]
+        
         try:
             path = save_attachment_file(att_id, att["filename"], att["payload"])
         except Exception as e:
@@ -133,9 +146,11 @@ async def ingest_email(
             filename=att["filename"],
             file_size=att["file_size"],
             content_type=att["content_type"],
-            file_hash_sha256=att["file_hash_sha256"],
+            file_hash_sha256=scan_res.sha256,
             path_on_disk=path,
-            scanning_status="Pending"
+            scanning_status=scan_res.status,
+            virus_found=scan_res.virus_found,
+            threat_label=scan_res.threat_label
         )
         db.add(attachment)
         attachments_list.append(AttachmentInfo(
@@ -143,14 +158,13 @@ async def ingest_email(
             filename=att["filename"],
             file_size=att["file_size"],
             content_type=att["content_type"],
-            file_hash_sha256=att["file_hash_sha256"]
+            file_hash_sha256=scan_res.sha256
         ))
         
     # Store normalized URLs in database url_indicators table
     urls_list = []
     for url_str in iocs.urls:
         url_id = uuid.uuid4()
-        # Compute SHA-256 for URL indicator mapping
         hash_sha256 = hashlib.sha256(url_str.encode()).hexdigest()
         
         url_ind = URLIndicator(
@@ -167,6 +181,27 @@ async def ingest_email(
             hash_sha256=hash_sha256
         ))
         
+    # Store YARA matches in database
+    for ym in scan_report.yara_matches:
+        yara_match = YaraMatch(
+            id=uuid.uuid4(),
+            email_id=email.id,
+            rule_name=ym.rule_name,
+            tags=ym.tags,
+            matched_strings={"matches": ym.matched_strings}
+        )
+        db.add(yara_match)
+        
+    # Create Alert if threat risk score is elevated (malware found or signature match)
+    if scan_report.risk_score >= 0.5:
+        alert = Alert(
+            id=uuid.uuid4(),
+            email_id=email.id,
+            risk_score=scan_report.risk_score,
+            status="OPEN"
+        )
+        db.add(alert)
+        
     try:
         db.commit()
     except Exception as e:
@@ -175,6 +210,7 @@ async def ingest_email(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Database insertion failed: {str(e)}"
         )
+        
     return ParsedEmailResponse(
         id=str(email.id),
         message_id=email.message_id,
@@ -188,5 +224,6 @@ async def ingest_email(
         size_bytes=email.size_bytes,
         attachments=attachments_list,
         urls=urls_list,
-        indicators=iocs
+        indicators=iocs,
+        risk_score=scan_report.risk_score
     )

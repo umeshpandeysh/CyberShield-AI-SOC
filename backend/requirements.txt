@@ -10,6 +10,8 @@ pytest>=7.0.0
 httpx2
 email-validator
 python-multipart
+yara-python>=4.3.0
+
 
 
 
