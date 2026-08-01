@@ -9,5 +9,8 @@ bcrypt==3.2.2
 pytest>=7.0.0
 httpx2
 email-validator
+celery>=5.3.0
+redis>=5.0.0
+
 
 
