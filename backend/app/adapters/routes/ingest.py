@@ -9,6 +9,7 @@ from app.domain.models import User, Email, Attachment, URLIndicator
 from app.adapters.routes.auth import get_current_active_user
 from app.adapters.email_parser import parse_eml_bytes
 from app.adapters.storage import save_attachment_file
+from app.adapters.ioc_service import IOCExtractionService, ExtractedIOCs
 
 router = APIRouter(prefix="/api/v1/ingest", tags=["Ingestion"])
 
@@ -38,6 +39,7 @@ class ParsedEmailResponse(BaseModel):
     size_bytes: int
     attachments: List[AttachmentInfo]
     urls: List[URLInfo]
+    indicators: ExtractedIOCs
 
 @router.post("/email", status_code=status.HTTP_200_OK, response_model=ParsedEmailResponse)
 async def ingest_email(
@@ -45,8 +47,9 @@ async def ingest_email(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Uploads a raw RFC822 (.eml) email file, parses it, stores the records in 
-    PostgreSQL database, and returns the complete structured JSON representation.
+    """Uploads a raw RFC822 (.eml) email file, parses it, extracts linter/threat IOCs 
+    via the IOC Extraction service, stores persistent records in PostgreSQL, 
+    and returns a structured JSON response.
     """
     if not file.filename.endswith(".eml"):
         raise HTTPException(
@@ -85,6 +88,14 @@ async def ingest_email(
             detail="Email with this Message-ID has already been ingested."
         )
         
+    # Extract IOCs via the reusable domain service
+    iocs = IOCExtractionService.extract_iocs(
+        body_text=parsed_data["body_text"],
+        body_html=parsed_data["body_html"],
+        headers_text=parsed_data["raw_header"],
+        attachments=parsed_data["attachments"]
+    )
+        
     # Create Email entity
     email = Email(
         id=uuid.uuid4(),
@@ -97,12 +108,12 @@ async def ingest_email(
         raw_header=parsed_data["raw_header"],
         size_bytes=parsed_data["size_bytes"],
         received_at=parsed_data["received_at"],
-        status="Completed"  # Converted synchronously
+        status="Completed"
     )
     
     db.add(email)
     
-    # Create Attachment entities
+    # Create Attachment entities and save payloads to secure disk path
     attachments_list = []
     for att in parsed_data["attachments"]:
         att_id = uuid.uuid4()
@@ -134,22 +145,25 @@ async def ingest_email(
             file_hash_sha256=att["file_hash_sha256"]
         ))
         
-    # Create URLIndicator entities
+    # Store normalized URLs in database url_indicators table
     urls_list = []
-    for ui in parsed_data["urls"]:
+    for url_str in iocs.urls:
         url_id = uuid.uuid4()
+        # Compute SHA-256 for URL indicator mapping
+        hash_sha256 = hashlib.sha256(url_str.encode()).hexdigest()
+        
         url_ind = URLIndicator(
             id=url_id,
             email_id=email.id,
-            url=ui["url"],
-            hash_sha256=ui["hash_sha256"],
+            url=url_str,
+            hash_sha256=hash_sha256,
             status="Unrated"
         )
         db.add(url_ind)
         urls_list.append(URLInfo(
             id=str(url_id),
-            url=ui["url"],
-            hash_sha256=ui["hash_sha256"]
+            url=url_str,
+            hash_sha256=hash_sha256
         ))
         
     try:
@@ -161,6 +175,7 @@ async def ingest_email(
             detail=f"Database insertion failed: {str(e)}"
         )
         
+    import hashlib
     return ParsedEmailResponse(
         id=str(email.id),
         message_id=email.message_id,
@@ -173,5 +188,6 @@ async def ingest_email(
         raw_header=email.raw_header,
         size_bytes=email.size_bytes,
         attachments=attachments_list,
-        urls=urls_list
+        urls=urls_list,
+        indicators=iocs
     )
