@@ -10,6 +10,8 @@ from app.adapters.routes.auth import get_current_active_user
 from app.adapters.email_parser import parse_eml_bytes
 from app.adapters.celery_app import celery_app
 
+from app.adapters.storage import save_attachment_file
+
 router = APIRouter(prefix="/api/v1/ingest", tags=["Ingestion"])
 
 @router.post("/email", status_code=status.HTTP_202_ACCEPTED)
@@ -75,17 +77,27 @@ async def ingest_email(
     
     db.add(email)
     
-    # Create Attachment entities
+    # Create Attachment entities and write payloads to disk
     for att in parsed_data["attachments"]:
+        att_id = uuid.uuid4()
+        try:
+            path = save_attachment_file(att_id, att["filename"], att["payload"])
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Attachment storage failed: {str(e)}"
+            )
+            
         attachment = Attachment(
-            id=uuid.uuid4(),
+            id=att_id,
             email_id=email.id,
             filename=att["filename"],
             file_size=att["file_size"],
             content_type=att["content_type"],
             file_hash_sha256=att["file_hash_sha256"],
+            path_on_disk=path,
             scanning_status="Pending"
-            # In a production system, raw payloads are streamed to object store / quarantined path
         )
         db.add(attachment)
         
