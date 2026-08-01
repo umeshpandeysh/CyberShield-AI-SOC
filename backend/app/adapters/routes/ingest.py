@@ -1,5 +1,6 @@
 import uuid
 import hashlib
+from datetime import datetime
 from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
@@ -12,6 +13,7 @@ from app.adapters.email_parser import parse_eml_bytes
 from app.adapters.storage import save_attachment_file
 from app.adapters.ioc_service import IOCExtractionService, ExtractedIOCs
 from app.adapters.threat_scanner import ThreatScannerService
+from app.adapters.ai_service import get_ai_service
 
 router = APIRouter(prefix="/api/v1/ingest", tags=["Ingestion"])
 
@@ -51,8 +53,8 @@ async def ingest_email(
     db: Session = Depends(get_db)
 ):
     """Uploads a raw RFC822 (.eml) email file, parses it, extracts threat IOCs, 
-    executes synchronous ClamAV and YARA scans, persists records in PostgreSQL 
-    including Alerts when threats are flagged, and returns a structured JSON response.
+    executes synchronous ClamAV and YARA scans, triggers AI threat classification, 
+    persists records in PostgreSQL including Alerts, and returns a structured response.
     """
     if not file.filename.endswith(".eml"):
         raise HTTPException(
@@ -105,6 +107,14 @@ async def ingest_email(
         subject=parsed_data["subject"],
         body_text=parsed_data["body_text"],
         body_html=parsed_data["body_html"],
+        headers=parsed_data["raw_header"],
+        attachments=parsed_data["attachments"]
+    )
+
+    # Run AI Threat Classification
+    ai_service = get_ai_service()
+    ai_report = ai_service.classify_email(
+        body=parsed_data["body_text"],
         headers=parsed_data["raw_header"],
         attachments=parsed_data["attachments"]
     )
@@ -192,13 +202,21 @@ async def ingest_email(
         )
         db.add(yara_match)
         
-    # Create Alert if threat risk score is elevated (malware found or signature match)
-    if scan_report.risk_score >= 0.5:
+    # Consolidate Risk Score from scanner and AI prediction
+    final_risk_score = max(scan_report.risk_score, ai_report["final_risk_score"])
+
+    # Create Alert if threat risk score is elevated (malware, YARA, or AI prediction)
+    if final_risk_score >= 0.5:
         alert = Alert(
             id=uuid.uuid4(),
             email_id=email.id,
-            risk_score=scan_report.risk_score,
-            status="OPEN"
+            risk_score=final_risk_score,
+            status="OPEN",
+            ai_phishing_probability=ai_report["phishing_probability"],
+            ai_spam_probability=ai_report["metadata_probability"],
+            ai_explanation={"explanations": ai_report["explanations"]},
+            ai_model_version=ai_report["model_version"],
+            ai_scanned_at=datetime.utcnow()
         )
         db.add(alert)
         
@@ -225,5 +243,5 @@ async def ingest_email(
         attachments=attachments_list,
         urls=urls_list,
         indicators=iocs,
-        risk_score=scan_report.risk_score
+        risk_score=final_risk_score
     )

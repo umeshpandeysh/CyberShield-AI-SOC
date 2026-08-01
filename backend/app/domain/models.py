@@ -103,6 +103,13 @@ class Alert(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # AI prediction storage
+    ai_phishing_probability: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    ai_spam_probability: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    ai_explanation: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    ai_model_version: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    ai_scanned_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     # Relationships
     email: Mapped["Email"] = relationship("Email", back_populates="alert")
     assignee: Mapped[Optional["User"]] = relationship("User", back_populates="assigned_alerts")

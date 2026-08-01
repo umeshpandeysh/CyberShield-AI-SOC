@@ -132,6 +132,16 @@ def get_alert_detail(
             "matched_strings": ym.matched_strings
         })
         
+    ai_analysis = None
+    if alert.ai_phishing_probability is not None:
+        expl_list = alert.ai_explanation.get("explanations", []) if alert.ai_explanation else []
+        critical_tokens = [item.get("token") for item in expl_list if item.get("token")]
+        ai_analysis = {
+            "phishing_probability": alert.ai_phishing_probability,
+            "spam_probability": alert.ai_spam_probability,
+            "critical_tokens": critical_tokens
+        }
+
     return {
         "id": str(alert.id),
         "risk_score": alert.risk_score,
@@ -148,6 +158,7 @@ def get_alert_detail(
             "raw_header": email.raw_header,
             "received_at": email.received_at.isoformat() + "Z"
         },
+        "ai_analysis": ai_analysis,
         "attachments": attachments_data,
         "urls": urls_data,
         "yara_matches": yara_data
