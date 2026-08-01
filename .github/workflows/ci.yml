@@ -11,17 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pytest
+          pip install flake8 pytest python-jose[cryptography] passlib[bcrypt]
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
 
       - name: Lint with flake8
@@ -31,19 +31,18 @@ jobs:
           # exit-zero treats all errors as warnings
           flake8 backend --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      - name: Run Backend Placeholder Tests
+      - name: Run Backend Tests
         run: |
-          echo "Running backend test suite placeholder"
-          # pytest tests/
+          pytest
 
   lint-frontend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
@@ -55,5 +54,9 @@ jobs:
       - name: Lint and build frontend
         run: |
           cd frontend
-          npm run lint --if-present
-          npm run build --if-present
+          if [ -d src ] && [ "$(find src -name '*.ts' -o -name '*.tsx' 2>/dev/null | wc -l)" -gt 0 ]; then
+            npm run lint --if-present
+            npm run build --if-present
+          else
+            echo "No frontend source code found yet. Skipping linting and building."
+          fi
