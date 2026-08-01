@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional, dict
+from typing import Optional
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from cryptography.fernet import Fernet
