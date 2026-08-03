@@ -1,55 +1,37 @@
 services:
-  # 1. FastAPI Backend Web Service
+  # 1. FastAPI Backend Web Service (Render Free Tier)
   - type: web
     name: cybershield-backend
     env: python
+    plan: free
     buildCommand: "pip install --upgrade pip && pip install -r backend/requirements.txt"
     startCommand: "chmod +x ./scripts/start_backend.sh && ./scripts/start_backend.sh"
     envVars:
       - key: PYTHONPATH
         value: "backend:."
       - key: DATABASE_URL
-        fromDatabase:
-          name: cybershield-postgres
-          property: connectionString
-      - key: REDIS_HOST
-        fromService:
-          type: redis
-          name: cybershield-redis
-          property: host
-      - key: REDIS_PORT
-        fromService:
-          type: redis
-          name: cybershield-redis
-          property: port
+        sync: false
+      - key: REDIS_URL
+        sync: false
       - key: SECRET_KEY
         generateValue: true
 
-  # 2. Celery Background Worker Service
+  # 2. Celery Background Worker Service (Render Free Tier)
   - type: worker
     name: cybershield-celery-worker
     env: python
+    plan: free
     buildCommand: "pip install --upgrade pip && pip install -r backend/requirements.txt"
     startCommand: "export PYTHONPATH=backend:. && celery -A app.adapters.celery_app.celery_app worker --loglevel=info"
     envVars:
       - key: PYTHONPATH
         value: "backend:."
       - key: DATABASE_URL
-        fromDatabase:
-          name: cybershield-postgres
-          property: connectionString
-      - key: REDIS_HOST
-        fromService:
-          type: redis
-          name: cybershield-redis
-          property: port
-      - key: REDIS_PORT
-        fromService:
-          type: redis
-          name: cybershield-redis
-          property: port
+        sync: false
+      - key: REDIS_URL
+        sync: false
 
-  # 3. React Frontend Static Site
+  # 3. React Frontend Static Site (Render Free Tier)
   - type: static
     name: cybershield-frontend
     buildCommand: "cd frontend && npm install && npm run build"
@@ -60,15 +42,3 @@ services:
           type: web
           name: cybershield-backend
           property: url
-
-databases:
-  # 4. PostgreSQL Managed Database
-  - name: cybershield-postgres
-    databaseName: cybershield_db
-    user: postgres
-    plan: free
-
-# 5. Redis Managed Key-Value Store
-redis:
-  - name: cybershield-redis
-    plan: free

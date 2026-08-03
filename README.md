@@ -231,32 +231,42 @@ npm run dev
 
 ---
 
-### Option C: 1-Click Render Cloud Deployment (`render.yaml`)
+### Option C: 100% Free Production Cloud Deployment (Render + Neon + Upstash)
 
-**CyberShield-AI-SOC** is fully configured for 1-click cloud deployment on **Render** (including Free Tier support).
+Deploy **CyberShield-AI-SOC** completely free using industry-standard free tier infrastructure:
 
-#### 1-Click Infrastructure Deployment:
-1. Fork this repository on GitHub.
-2. Log into [Render Dashboard](https://dashboard.render.com/).
-3. Click **New +** -> **Blueprints**.
-4. Connect your GitHub repository containing `render.yaml`.
-5. Render will automatically provision and connect all 5 services:
-   - 🗄️ **PostgreSQL Database** (`cybershield-postgres`)
-   - ⚡ **Redis Key-Value Instance** (`cybershield-redis`)
-   - 🐍 **FastAPI Backend Web Service** (`cybershield-backend`)
-   - ⚙️ **Celery Background Worker** (`cybershield-celery-worker`)
-   - ⚛️ **React Static Site** (`cybershield-frontend`)
+```
+┌─────────────────────────┐      ┌──────────────────────────┐
+│  Render Static Site     │      │   Render Web Service     │
+│   (React Frontend)      │ ───> │    (FastAPI Backend)     │
+└─────────────────────────┘      └────────────┬─────────────┘
+                                              │
+                    ┌─────────────────────────┴────────────────────────┐
+                    │                                                  │
+                    ▼                                                  ▼
+     ┌────────────────────────────┐                     ┌────────────────────────────┐
+     │   Neon Serverless Postgres │                     │   Upstash Serverless Redis │
+     │     (PostgreSQL Database)  │                     │   (Broker & Cache Queue)   │
+     └────────────────────────────┘                     └────────────────────────────┘
+```
 
-#### Manual Render Deployment Checklist:
-If configuring services manually in Render Dashboard:
+#### Step 1: Provision Free PostgreSQL on Neon
+1. Go to [Neon Console](https://console.neon.tech/) and create a free project (`cybershield_db`).
+2. Copy the Connection String URL (`postgres://user:pass@ep-xyz.neon.tech/cybershield_db?sslmode=require`).
 
-| Service | Render Service Type | Build Command | Start Command / Output Path |
-|---------|---------------------|---------------|-----------------------------|
-| **Database** | PostgreSQL | N/A | Database Name: `cybershield_db` |
-| **Redis** | Redis / Key-Value | N/A | Port: `6379` |
-| **Backend** | Web Service (Python 3) | `pip install -r backend/requirements.txt` | `./scripts/start_backend.sh` |
-| **Worker** | Background Worker | `pip install -r backend/requirements.txt` | `export PYTHONPATH=backend:. && celery -A app.adapters.celery_app.celery_app worker` |
-| **Frontend** | Static Site | `cd frontend && npm install && npm run build` | Publish Directory: `./frontend/dist` |
+#### Step 2: Provision Free Redis on Upstash
+1. Go to [Upstash Console](https://console.upstash.com/) and create a free Redis Database (`cybershield-redis`).
+2. Copy the Redis Connection URL (`rediss://default:password@upstash-host:6379`).
+
+#### Step 3: Deploy on Render via 1-Click Blueprint
+1. Log into [Render Dashboard](https://dashboard.render.com/).
+2. Click **New +** -> **Blueprints**.
+3. Connect your repository. Render will automatically detect `render.yaml`.
+4. Fill in the prompt for `DATABASE_URL` (Neon URL) and `REDIS_URL` (Upstash URL).
+5. Click **Apply**. Render will automatically provision:
+   - 🐍 **`cybershield-backend`** (Web Service)
+   - ⚙️ **`cybershield-celery-worker`** (Background Worker)
+   - ⚛️ **`cybershield-frontend`** (Static Site)
 
 ---
 

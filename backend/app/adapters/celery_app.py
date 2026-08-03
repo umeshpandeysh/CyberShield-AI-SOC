@@ -5,10 +5,7 @@ logger = logging.getLogger("celery_app")
 
 try:
     from app.infra.config import settings
-    REDIS_URL = (
-        f"redis://:{settings.REDIS_PASSWORD}@"
-        f"{settings.REDIS_HOST}:{settings.REDIS_PORT}/0"
-    )
+    REDIS_URL = settings.get_redis_url
 except Exception:
     REDIS_URL = "redis://localhost:6379/0"
 
