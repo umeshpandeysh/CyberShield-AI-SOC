@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.infra.db_session import get_db
-from app.domain.models import User, Email, Attachment, URLIndicator, YaraMatch, Alert
+from app.domain.models import (
+    User, Email, Attachment, URLIndicator, YaraMatch, Alert, TaskRecord
+)
 from app.adapters.routes.auth import get_current_active_user
 from app.adapters.email_parser import parse_eml_bytes
 from app.adapters.storage import save_attachment_file
@@ -245,3 +247,89 @@ async def ingest_email(
         indicators=iocs,
         risk_score=final_risk_score
     )
+
+
+# --- Async Ingest Response Schema ---
+class AsyncIngestResponse(BaseModel):
+    task_id: str
+    status: str
+    message: str
+
+
+@router.post(
+    "/email/async",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=AsyncIngestResponse
+)
+async def ingest_email_async(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Uploads a raw RFC822 (.eml) email file and queues it
+    for asynchronous processing via Celery. Returns a task ID
+    immediately for status tracking.
+    """
+    if not file.filename.endswith(".eml"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file format. Only .eml files are supported."
+        )
+
+    try:
+        eml_bytes = await file.read()
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not read uploaded file."
+        )
+
+    if len(eml_bytes) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty."
+        )
+
+    # Create a TaskRecord to track this job
+    task_rec = TaskRecord(
+        id=uuid.uuid4(),
+        task_type="email_analysis",
+        status="Pending",
+        created_at=datetime.utcnow()
+    )
+    db.add(task_rec)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create task record."
+        )
+
+    # Dispatch to Celery
+    try:
+        from app.adapters.celery_tasks import analyze_email_task
+        result = analyze_email_task.apply_async(
+            args=[str(task_rec.id), eml_bytes.hex()],
+            task_id=str(uuid.uuid4())
+        )
+        task_rec.celery_task_id = result.id
+        db.commit()
+    except Exception:
+        # If Celery/Redis unavailable, execute synchronously as fallback
+        from app.adapters.task_processor import process_email_pipeline
+        try:
+            process_email_pipeline(str(task_rec.id), eml_bytes, db)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Processing failed: {str(e)}"
+            )
+
+    return AsyncIngestResponse(
+        task_id=str(task_rec.id),
+        status="Pending",
+        message="Email queued for asynchronous analysis."
+    )
+

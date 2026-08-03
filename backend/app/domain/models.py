@@ -128,3 +128,20 @@ class AuditLog(Base):
 
     # Relationships
     user: Mapped[Optional["User"]] = relationship("User", back_populates="audit_logs")
+
+
+class TaskRecord(Base):
+    __tablename__ = "task_records"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    task_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="Pending", index=True)
+    email_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("emails.id", ondelete="CASCADE"), nullable=True, index=True)
+    celery_task_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    retry_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    result_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
