@@ -145,3 +145,154 @@ class TaskRecord(Base):
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     result_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
+
+class Case(Base):
+    __tablename__ = "cases"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    severity: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="Medium", index=True
+    )
+    status: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="Open", index=True
+    )
+    alert_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("alerts.id", ondelete="SET NULL"),
+        nullable=True, index=True
+    )
+    assigned_to: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True, index=True
+    )
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    closed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
+    tags: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    # Relationships
+    alert: Mapped[Optional["Alert"]] = relationship(
+        "Alert", foreign_keys=[alert_id]
+    )
+    assignee: Mapped[Optional["User"]] = relationship(
+        "User", foreign_keys=[assigned_to]
+    )
+    creator: Mapped[Optional["User"]] = relationship(
+        "User", foreign_keys=[created_by]
+    )
+    notes: Mapped[List["CaseNote"]] = relationship(
+        "CaseNote", back_populates="case",
+        cascade="all, delete-orphan",
+        order_by="CaseNote.created_at.desc()"
+    )
+    events: Mapped[List["CaseEvent"]] = relationship(
+        "CaseEvent", back_populates="case",
+        cascade="all, delete-orphan",
+        order_by="CaseEvent.timestamp.desc()"
+    )
+    evidence_items: Mapped[List["CaseEvidence"]] = relationship(
+        "CaseEvidence", back_populates="case",
+        cascade="all, delete-orphan"
+    )
+
+
+class CaseNote(Base):
+    __tablename__ = "case_notes"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cases.id", ondelete="CASCADE"),
+        nullable=False, index=True
+    )
+    author_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relationships
+    case: Mapped["Case"] = relationship("Case", back_populates="notes")
+    author: Mapped[Optional["User"]] = relationship("User")
+
+
+class CaseEvent(Base):
+    __tablename__ = "case_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cases.id", ondelete="CASCADE"),
+        nullable=False, index=True
+    )
+    actor_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True
+    )
+    event_type: Mapped[str] = mapped_column(
+        String(100), nullable=False
+    )
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    metadata_json: Mapped[Optional[dict]] = mapped_column(
+        JSON, nullable=True
+    )
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, index=True
+    )
+
+    # Relationships
+    case: Mapped["Case"] = relationship("Case", back_populates="events")
+    actor: Mapped[Optional["User"]] = relationship("User")
+
+
+class CaseEvidence(Base):
+    __tablename__ = "case_evidence"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cases.id", ondelete="CASCADE"),
+        nullable=False, index=True
+    )
+    evidence_type: Mapped[str] = mapped_column(
+        String(100), nullable=False
+    )
+    reference_id: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True
+    )
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    added_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True
+    )
+    added_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow
+    )
+
+    # Relationships
+    case: Mapped["Case"] = relationship(
+        "Case", back_populates="evidence_items"
+    )
+    collector: Mapped[Optional["User"]] = relationship("User")
+
+
