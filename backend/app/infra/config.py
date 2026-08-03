@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     VIRUSTOTAL_API_KEY: str = ""
     ABUSEIPDB_API_KEY: str = ""
     SHODAN_API_KEY: str = ""
+    OTX_API_KEY: str = ""
+    URLHAUS_API_KEY: str = ""
+    OPENPHISH_API_KEY: str = ""
+    THREAT_INTEL_CACHE_TTL: int = 86400
 
     # ClamAV Configuration
     CLAMAV_HOST: str = "localhost"

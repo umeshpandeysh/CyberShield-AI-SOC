@@ -296,3 +296,22 @@ class CaseEvidence(Base):
     collector: Mapped[Optional["User"]] = relationship("User")
 
 
+class ThreatIntelRecord(Base):
+    __tablename__ = "threat_intel_records"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    ioc: Mapped[str] = mapped_column(String(512), nullable=False, index=True)
+    ioc_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    reputation: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    first_seen: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    last_seen: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    tags: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    malware_family: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    threat_actor: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    raw_response: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    cache_expiry: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

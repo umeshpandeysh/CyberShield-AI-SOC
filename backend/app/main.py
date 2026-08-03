@@ -5,6 +5,7 @@ from app.adapters.routes.ingest import router as ingest_router
 from app.adapters.routes.alerts import router as alerts_router
 from app.adapters.routes.tasks import router as tasks_router
 from app.adapters.routes.cases import router as cases_router
+from app.adapters.routes.threat_intel import router as threat_intel_router
 
 app = FastAPI(
     title="CyberShield-AI-SOC API",
@@ -27,6 +28,7 @@ app.include_router(ingest_router)
 app.include_router(alerts_router)
 app.include_router(tasks_router)
 app.include_router(cases_router)
+app.include_router(threat_intel_router)
 
 @app.get("/health", tags=["Health Check"])
 def health_check():
