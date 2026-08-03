@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cybershield-backend
+  namespace: cybershield-soc
+  labels:
+    app: cybershield-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cybershield-backend
+  template:
+    metadata:
+      labels:
+        app: cybershield-backend
+    spec:
+      containers:
+      - name: backend
+        image: cybershield-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: POSTGRES_HOST
+          value: "postgres-service"
+        - name: REDIS_HOST
+          value: "redis-service"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cybershield-backend-service
+  namespace: cybershield-soc
+spec:
+  selector:
+    app: cybershield-backend
+  ports:
+  - protocol: TCP
+    port: 8000
+    targetPort: 8000
+  type: ClusterIP
