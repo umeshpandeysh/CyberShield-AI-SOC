@@ -141,7 +141,7 @@ class ThreatIntelService:
             import redis
             redis_url = celery_app.conf.broker_url
             r = redis.Redis.from_url(redis_url, socket_timeout=1.0)
-            r.setex(key, ttl, json.dumps(data))
+            r.set(key, json.dumps(data), ex=ttl)
         except Exception:
             pass
 
@@ -171,6 +171,8 @@ class ThreatIntelService:
             cached_data = self._get_from_cache(ioc_value, ioc_type)
             if cached_data:
                 return cached_data
+        else:
+            self.stats["cache_misses"] += 1
 
         # Query all relevant providers
         provider_results = self.provider_manager.query_all(ioc_value, ioc_type)

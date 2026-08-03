@@ -257,10 +257,10 @@ def list_cases(
     tag: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     sort_by: Optional[str] = Query(
-        "created_at", regex="^(created_at|updated_at|severity)$"
+        "created_at", pattern="^(created_at|updated_at|severity)$"
     ),
     sort_order: Optional[str] = Query(
-        "desc", regex="^(asc|desc)$"
+        "desc", pattern="^(asc|desc)$"
     ),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
