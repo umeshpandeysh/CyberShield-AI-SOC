@@ -2,7 +2,7 @@ services:
   # 1. FastAPI Backend Web Service (Render Free Tier)
   - type: web
     name: cybershield-backend
-    env: python
+    runtime: python
     plan: free
     buildCommand: "pip install --upgrade pip && pip install -r backend/requirements.txt"
     startCommand: "chmod +x ./scripts/start_backend.sh && ./scripts/start_backend.sh"
@@ -16,24 +16,10 @@ services:
       - key: SECRET_KEY
         generateValue: true
 
-  # 2. Celery Background Worker Service (Render Free Tier)
-  - type: worker
-    name: cybershield-celery-worker
-    env: python
-    plan: free
-    buildCommand: "pip install --upgrade pip && pip install -r backend/requirements.txt"
-    startCommand: "export PYTHONPATH=backend:. && celery -A app.adapters.celery_app.celery_app worker --loglevel=info"
-    envVars:
-      - key: PYTHONPATH
-        value: "backend:."
-      - key: DATABASE_URL
-        sync: false
-      - key: REDIS_URL
-        sync: false
-
-  # 3. React Frontend Static Site (Render Free Tier)
-  - type: static
+  # 2. React Frontend Static Site (Render Free Tier)
+  - type: web
     name: cybershield-frontend
+    runtime: static
     buildCommand: "cd frontend && npm install && npm run build"
     staticPublishPath: "./frontend/dist"
     envVars:
@@ -41,4 +27,4 @@ services:
         fromService:
           type: web
           name: cybershield-backend
-          property: url
+          property: host
