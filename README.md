@@ -231,7 +231,36 @@ npm run dev
 
 ---
 
-### Option 3: Kubernetes & Helm Deployment
+### Option C: 1-Click Render Cloud Deployment (`render.yaml`)
+
+**CyberShield-AI-SOC** is fully configured for 1-click cloud deployment on **Render** (including Free Tier support).
+
+#### 1-Click Infrastructure Deployment:
+1. Fork this repository on GitHub.
+2. Log into [Render Dashboard](https://dashboard.render.com/).
+3. Click **New +** -> **Blueprints**.
+4. Connect your GitHub repository containing `render.yaml`.
+5. Render will automatically provision and connect all 5 services:
+   - 🗄️ **PostgreSQL Database** (`cybershield-postgres`)
+   - ⚡ **Redis Key-Value Instance** (`cybershield-redis`)
+   - 🐍 **FastAPI Backend Web Service** (`cybershield-backend`)
+   - ⚙️ **Celery Background Worker** (`cybershield-celery-worker`)
+   - ⚛️ **React Static Site** (`cybershield-frontend`)
+
+#### Manual Render Deployment Checklist:
+If configuring services manually in Render Dashboard:
+
+| Service | Render Service Type | Build Command | Start Command / Output Path |
+|---------|---------------------|---------------|-----------------------------|
+| **Database** | PostgreSQL | N/A | Database Name: `cybershield_db` |
+| **Redis** | Redis / Key-Value | N/A | Port: `6379` |
+| **Backend** | Web Service (Python 3) | `pip install -r backend/requirements.txt` | `./scripts/start_backend.sh` |
+| **Worker** | Background Worker | `pip install -r backend/requirements.txt` | `export PYTHONPATH=backend:. && celery -A app.adapters.celery_app.celery_app worker` |
+| **Frontend** | Static Site | `cd frontend && npm install && npm run build` | Publish Directory: `./frontend/dist` |
+
+---
+
+### Option D: Kubernetes Deployment via Helm Deployment
 
 <details>
 <summary>Click to expand Kubernetes & Helm deployment guide</summary>

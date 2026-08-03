@@ -1,6 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from backend.app.infra.config import settings
+try:
+    from app.infra.config import settings
+except ImportError:
+    from backend.app.infra.config import settings
 
 # Create database engine with connection pooling parameters
 engine = create_engine(
