@@ -562,7 +562,11 @@ def test_task_processor_failure_updates_record(
         with pytest.raises(ValueError, match="Malformed EML"):
             process_email_pipeline(str(task_id), eml_bytes, db_session)
 
-    db_session.refresh(task)
+    # Re-query instead of refresh since pipeline rolled back the session
+    task = db_session.query(TaskRecord).filter(
+        TaskRecord.id == task_id
+    ).first()
+    assert task is not None
     assert task.status == "Failed"
     assert "Malformed EML" in task.error_message
 
@@ -611,7 +615,11 @@ def test_task_processor_duplicate_email(
     with pytest.raises(ValueError, match="already been ingested"):
         process_email_pipeline(str(task_id), eml_bytes, db_session)
 
-    db_session.refresh(task)
+    # Re-query instead of refresh since pipeline rolled back the session
+    task = db_session.query(TaskRecord).filter(
+        TaskRecord.id == task_id
+    ).first()
+    assert task is not None
     assert task.status == "Failed"
 
 

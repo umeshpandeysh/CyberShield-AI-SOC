@@ -189,15 +189,18 @@ def process_email_pipeline(
         db.rollback()
         logger.error(f"Task {task_record_id}: failed - {str(e)}")
 
-        # Update task record with failure
-        if task_rec:
-            try:
+        # Re-query task record after rollback to get fresh object
+        try:
+            task_rec = db.query(TaskRecord).filter(
+                TaskRecord.id == uuid.UUID(task_record_id)
+            ).first()
+            if task_rec:
                 task_rec.status = "Failed"
                 task_rec.completed_at = datetime.utcnow()
                 task_rec.error_message = str(e)[:1000]
                 task_rec.retry_count = (task_rec.retry_count or 0) + 1
                 db.commit()
-            except Exception:
-                db.rollback()
+        except Exception:
+            db.rollback()
 
         raise
