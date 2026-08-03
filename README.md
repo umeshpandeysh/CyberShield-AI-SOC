@@ -1,118 +1,213 @@
-# CyberShield-AI-SOC 🛡️🤖
+# 🛡️ CyberShield-AI-SOC
+
+> **Autonomous AI-Driven Email Threat Detection, Incident Response & SOC Platform**
 
 [![CI Pipeline](https://github.com/umeshpandeysh/CyberShield-AI-SOC/actions/workflows/ci.yml/badge.svg)](https://github.com/umeshpandeysh/CyberShield-AI-SOC/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11-blue.svg)](https://www.python.org/)
-[![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-green.svg)](https://nodejs.org/)
-
-**CyberShield-AI-SOC** is a production-grade, AI-powered Security Operations Center (SOC) platform designed for email threat detection, automated threat hunting, and security incident response. It integrates state-of-the-art Natural Language Processing (NLP) models, traditional signature scans, and custom heuristic rule engines to identify phishing, spam, malware attachments, and malicious payloads.
-
-## 🚀 Key Features
-
-* **Real-time Ingestion & Parsing**: High-performance email ingestion supporting SMTP listener and API-based integrations.
-* **Hybrid Threat Analysis Engine**:
-  * **AI/ML Classifiers**: Transformers-based NLP engine classifying email bodies and headers for spear-phishing and spam.
-  * **YARA Rule Parser**: Custom and community YARA rules targeting phishing kit indicators, malicious headers, and suspicious payloads.
-  * **ClamAV Anti-Malware**: Real-time attachment file scanning for trojans, worms, and viruses.
-  * **VirusTotal Lookup**: IP, domain, URL, and file hash threat intelligence enrichment.
-* **SOC Analyst Dashboard**:
-  * Rich React interface providing incident queues, threat maps, and telemetry graphs.
-  * Interactive incident timeline and sandbox investigation tools.
-* **Multi-Container Architecture**: Dockerized services orchestrated by Docker Compose for easy scaling and testing.
-
-## 🛠️ Technology Stack
-
-* **Frontend**: React, TypeScript, TailwindCSS (for responsive UI/UX), Lucide React (for icons)
-* **Backend**: FastAPI (Python), PostgreSQL (Database), Redis (Task Queue & Cache)
-* **AI Engine**: PyTorch, Transformers (Hugging Face), Scikit-Learn
-* **Threat Services**: YARA (signature matching), ClamAV daemon, VirusTotal API
-* **Deployment & Ops**: Docker, Docker-Compose, GitHub Actions (CI/CD)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python Version](https://img.shields.io/badge/Python-3.11-emerald.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100.0+-009688.svg)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18-61DAFB.svg)](https://reactjs.org)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://docker.com)
 
 ---
 
-## 📂 Directory Structure
+## 📌 Executive Overview
 
-```text
-CyberShield-AI-SOC/
-├── frontend/              # React/TypeScript Analyst Dashboard UI
-├── backend/               # FastAPI REST API & Ingestion Pipeline
-├── ai-engine/             # Machine learning classifiers (PyTorch/Transformers)
-├── services/              # Threat-Intel APIs, ClamAV, and YARA integrations
-├── datasets/              # Sample training/testing datasets (e.g. spam/phishing)
-├── models/                # Saved weights and serialized AI models
-├── yara-rules/            # Custom and community YARA signatures
-├── docker/                # Custom Dockerfiles and build scripts
-├── docs/                  # Architecture, setup guides, and API docs
-├── scripts/               # Training, database seeds, and utility scripts
-├── tests/                 # Unit, integration, and E2E test suites
-├── reports/               # Auto-generated incident reports and PDF logs
-├── .github/               # GitHub Actions CI workflows and Issue/PR templates
-├── README.md              # Project onboarding guide
-├── LICENSE                # MIT License
-├── SECURITY.md            # Security reporting policies
-├── CONTRIBUTING.md        # Code guidelines and workflows
-├── CHANGELOG.md           # Version release tracking
-├── CODE_OF_CONDUCT.md     # Contributor community guidelines
-├── .gitignore             # Ignored files for Python/Node/OS/Docker/IDEs
-├── .env.example           # Example local development variables
-└── docker-compose.yml     # Local multi-service orchestration
+**CyberShield-AI-SOC** is an enterprise-ready, autonomous Security Operations Center (SOC) platform designed for modern security teams. It automatically ingests RFC822 `.eml` emails, parses MIME structures, extracts IOC indicators (URLs, IPs, domains, hashes), runs malware and signature scans (ClamAV & YARA), evaluates threats using a hybrid **DistilBERT + XGBoost** AI engine, enriches indicators via multi-provider threat intelligence (**VirusTotal, AbuseIPDB, URLHaus, OTX, OpenPhish**), and orchestrates incident triage via a glassmorphic React dashboard.
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+flowchart TB
+    subgraph Ingestion ["1. Ingestion & Analysis"]
+        EML["RFC822 .eml File"] --> API["FastAPI Backend"]
+        API --> Celery["Celery Task Queue"]
+        Celery --> Redis[("Redis Broker & Cache")]
+    end
+
+    subgraph Processing ["2. Inspection & Detection"]
+        Celery --> Parser["MIME & Header Parser"]
+        Parser --> Scanner["ClamAV & YARA Scanner"]
+        Parser --> AI["DistilBERT + XGBoost AI"]
+        Parser --> IOC["IOC Extractor & Normalizer"]
+    end
+
+    subgraph Enrichment ["3. Threat Intelligence"]
+        IOC --> TI["Threat Intel Service"]
+        TI --> VT["VirusTotal"]
+        TI --> AB["AbuseIPDB"]
+        TI --> UH["URLHaus"]
+        TI --> OTX["AlienVault OTX"]
+        TI --> OP["OpenPhish"]
+    end
+
+    subgraph Operations ["4. SOC Case Management"]
+        AI & Scanner & TI --> Alert["Alert Engine"]
+        Alert --> Escalation["Risk Score Escalator"]
+        Escalation --> DB[("PostgreSQL Database")]
+        DB --> Cases["Case Management Lifecycle"]
+    end
+
+    subgraph Presentation ["5. SOC Dashboard & Telemetry"]
+        DB --> WS["WebSocket Telemetry Stream"]
+        WS --> UI["React 18 Glassmorphism Dashboard"]
+        UI --> Analyst["SOC Security Analyst"]
+    end
 ```
 
 ---
 
-## 🚦 Getting Started
+## ✨ Core Feature Highlights
 
-### Prerequisites
-
-Ensure you have the following installed on your machine:
-* Python `3.10+` or `3.11+`
-* Node.js `18.0.0+` & npm
-* Docker & Docker Compose
-* Git
-
-### Installation & Local Setup
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/umeshpandeysh/CyberShield-AI-SOC.git
-   cd CyberShield-AI-SOC
-   ```
-
-2. **Configure Environment Variables**:
-   Copy the example environment file and configure variables:
-   ```bash
-   cp .env.example .env
-   ```
-   *(Ensure to configure databases, external service API tokens, and JWT secrets in your `.env`)*
-
-3. **Spin Up Infrastructural Services**:
-   Use docker-compose to start PostgreSQL, Redis, and ClamAV:
-   ```bash
-   docker-compose up -d db redis clamav
-   ```
-
-4. **Initialize and Run Backend**:
-   ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
-   pip install -r requirements.txt
-   uvicorn app.main:app --reload
-   ```
-
-5. **Initialize and Run Frontend**:
-   ```bash
-   cd ../frontend
-   npm install
-   npm run dev
-   ```
+| Module | Features & Capabilities |
+|--------|-------------------------|
+| **Email Parsing** | RFC822 MIME parser, body extraction, URL parsing, attachment disk sandbox, deduplication. |
+| **IOC Extraction** | Regex classifier for URLs, domains, IPv4, IPv6, email addresses, MD5, SHA1, SHA256. |
+| **Threat Scanning** | **ClamAV** malware scanning + **YARA** custom signature matching. |
+| **AI Classification** | **DistilBERT** NLP + **XGBoost** metadata model with Explainable AI (XAI) token extraction. |
+| **Async Pipeline** | **Celery + Redis** task distribution, exponential retries, dead-letter failure handling. |
+| **Case Management** | Incident lifecycle (`Open` to `Closed`), severity levels, analyst notes, evidence collection, timeline. |
+| **Threat Intelligence** | **VirusTotal**, **AbuseIPDB**, **URLHaus**, **OTX**, **OpenPhish** with `CircuitBreaker` resilience. |
+| **Real-time Telemetry** | `WebSocket /ws/notifications` live alert stream & async task progress monitoring. |
+| **Analytics & Reports** | 7-day threat trend, top targets, top malicious URLs, executive PDF report exporter. |
+| **SOC Dashboard** | Dark-mode glassmorphic React 18 dashboard with interactive triage drawers and admin controls. |
 
 ---
 
-## 🔒 Security
+## 🚀 Quick Start & Installation
 
-For security vulnerability reporting, please see [SECURITY.md](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/CyberShield-AI-SOC/SECURITY.md).
+### Option 1: Docker Compose Production Stack (Recommended)
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/umeshpandeysh/CyberShield-AI-SOC.git
+cd CyberShield-AI-SOC
+
+# 2. Start the multi-container stack
+docker-compose -f docker-compose.prod.yml up -d --build
+
+# 3. Check status
+docker-compose -f docker-compose.prod.yml ps
+```
+- **Backend Swagger API**: `http://localhost:8000/docs`
+- **React SOC Dashboard**: `http://localhost:3000`
+
+---
+
+### Option 2: Local Developer Setup
+
+#### Backend Setup
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r backend/requirements.txt
+
+# Start Redis & PostgreSQL (or use Docker)
+docker run -d -p 6379:6379 redis:7-alpine
+
+# Start Backend API
+uvicorn app.main:app --reload --port 8000
+```
+
+#### Frontend Setup
+```bash
+cd frontend
+
+# Install packages
+npm install
+
+# Run TypeScript type check
+npm run typecheck
+
+# Start development server
+npm run dev
+```
+
+---
+
+## 📖 API Usage & Examples
+
+### 1. Authenticate & Obtain JWT Token
+```bash
+curl -X POST "http://localhost:8000/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "analyst@cybershield.io", "password": "Password123!"}'
+```
+
+### 2. Async Email Ingestion (`.eml` upload)
+```bash
+curl -X POST "http://localhost:8000/api/v1/ingest/email/async" \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>" \
+  -F "file=@samples/phishing_sample.eml"
+```
+
+### 3. Threat Intelligence IOC Enrichment
+```bash
+curl -X GET "http://localhost:8000/api/v1/threat-intel/ioc/http%3A%2F%2Ffakebank-login.com%2Fverify" \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>"
+```
+
+### 4. Create SOC Incident Case
+```bash
+curl -X POST "http://localhost:8000/api/v1/cases" \
+  -H "Authorization: Bearer <YOUR_JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Account Takeover Phishing Campaign",
+    "severity": "Critical",
+    "description": "Suspicious login link targeting corporate accounts."
+  }'
+```
+
+---
+
+## ☸️ Kubernetes & Production Deployment
+
+### Kubernetes Deployment via Helm
+```bash
+# Create namespace
+kubectl create namespace cybershield-soc
+
+# Deploy using Helm chart
+helm install cybershield ./deploy/helm -n cybershield-soc
+
+# Monitor pod deployment
+kubectl get pods -n cybershield-soc
+```
+
+### Database Backup & Recovery
+```bash
+# Automated database backup
+./scripts/backup_restore.sh backup
+
+# Restore database from snapshot
+./scripts/backup_restore.sh restore ./backups/cybershield_backup_YYYYMMDD_HHMMSS.sql.gz
+```
+
+---
+
+## 🧪 Testing & Verification
+
+Run the comprehensive unit and integration test suite:
+
+```bash
+# Run backend pytest suite (88 tests)
+pytest
+
+# Run Python linting
+flake8 backend
+
+# Run frontend type check and production build
+cd frontend && npm run typecheck && npm run build
+```
+
+---
 
 ## 📄 License
 
-This project is licensed under the MIT License. See [LICENSE](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/CyberShield-AI-SOC/LICENSE) for details.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
