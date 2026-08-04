@@ -122,7 +122,7 @@ export default function App() {
   };
 
   const connectWebSocket = () => {
-    const rawBase = import.meta.env.VITE_API_BASE_URL || '';
+    const rawBase = ((import.meta as any).env?.VITE_API_BASE_URL as string) || '';
     const wsHost = rawBase ? rawBase.replace(/^https?:\/\//, '').replace(/\/$/, '') : window.location.host;
     const protocol = (rawBase ? rawBase.startsWith('https') : window.location.protocol === 'https:') ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${wsHost}/ws/notifications`;

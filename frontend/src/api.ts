@@ -1,4 +1,4 @@
-const rawBase = import.meta.env.VITE_API_BASE_URL || '';
+const rawBase = ((import.meta as any).env?.VITE_API_BASE_URL as string) || '';
 const normalizedBase = rawBase
   ? (rawBase.startsWith('http') ? rawBase.replace(/\/$/, '') : `https://${rawBase.replace(/\/$/, '')}`)
   : '';
