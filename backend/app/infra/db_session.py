@@ -27,3 +27,43 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def init_db():
+    """Ensures all database tables exist and seeds initial default users."""
+    try:
+        from app.domain.models import Base, User
+        from app.adapters.security import get_password_hash
+    except ImportError:
+        from backend.app.domain.models import Base, User
+        from backend.app.adapters.security import get_password_hash
+
+    Base.metadata.create_all(bind=engine)
+
+    db = SessionLocal()
+    try:
+        analyst = db.query(User).filter(User.email == "analyst@cybershield.io").first()
+        if not analyst:
+            analyst = User(
+                email="analyst@cybershield.io",
+                password_hash=get_password_hash("Password123!"),
+                role="Analyst_L2",
+                is_active=True
+            )
+            db.add(analyst)
+
+        admin = db.query(User).filter(User.email == "admin@cybershield.io").first()
+        if not admin:
+            admin = User(
+                email="admin@cybershield.io",
+                password_hash=get_password_hash("Password123!"),
+                role="Admin",
+                is_active=True
+            )
+            db.add(admin)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Database seed initialization notice: {e}")
+    finally:
+        db.close()
+

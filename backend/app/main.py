@@ -12,11 +12,20 @@ from app.adapters.routes.reports import router as reports_router
 from app.adapters.routes.admin import router as admin_router
 from app.adapters.routes.settings_route import router as settings_router
 
+try:
+    from app.infra.db_session import init_db
+except ImportError:
+    from backend.app.infra.db_session import init_db
+
 app = FastAPI(
     title="CyberShield-AI-SOC API",
     description="Production-grade threat detection dashboard API backend.",
     version="0.1.0-alpha"
 )
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 # Enable CORS for frontend dashboard interactions
 app.add_middleware(
