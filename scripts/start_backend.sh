@@ -19,7 +19,11 @@ echo "Binding FastAPI web server to 0.0.0.0:${LISTEN_PORT}"
 # Run database migrations if alembic is configured
 if [ -f "backend/alembic.ini" ]; then
     echo "Executing Alembic database migrations..."
-    python -m alembic -c backend/alembic.ini upgrade head || echo "Alembic migration notice: Continuing with automatic schema initialization."
+    if ! python -m alembic -c backend/alembic.ini upgrade head; then
+        echo "ERROR: Alembic database migration failed!"
+        exit 1
+    fi
+    echo "Alembic database migrations completed successfully."
 fi
 
 # Execute Uvicorn application server
