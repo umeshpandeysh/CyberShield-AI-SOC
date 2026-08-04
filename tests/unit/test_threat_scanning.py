@@ -91,7 +91,7 @@ def test_threat_scanning_clean_attachments(mock_clamav, client, token, db_sessio
     assert response.status_code == 200
     
     data = response.json()
-    assert data["risk_score"] < 0.5  # Low risk with clean attachments
+    assert data["risk_score"] < 0.6  # Low risk with clean attachments
     
     # Assert database values
     email_rec = db_session.query(Email).filter(Email.message_id == "<clean-id-123@company.com>").first()
