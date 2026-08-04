@@ -1,4 +1,8 @@
-const API_BASE = '/api/v1';
+const rawBase = import.meta.env.VITE_API_BASE_URL || '';
+const normalizedBase = rawBase
+  ? (rawBase.startsWith('http') ? rawBase.replace(/\/$/, '') : `https://${rawBase.replace(/\/$/, '')}`)
+  : '';
+const API_BASE = normalizedBase ? `${normalizedBase}/api/v1` : '/api/v1';
 
 export function getAuthToken(): string | null {
   return localStorage.getItem('access_token');

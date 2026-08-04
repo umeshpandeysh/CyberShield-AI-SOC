@@ -122,8 +122,10 @@ export default function App() {
   };
 
   const connectWebSocket = () => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/notifications`;
+    const rawBase = import.meta.env.VITE_API_BASE_URL || '';
+    const wsHost = rawBase ? rawBase.replace(/^https?:\/\//, '').replace(/\/$/, '') : window.location.host;
+    const protocol = (rawBase ? rawBase.startsWith('https') : window.location.protocol === 'https:') ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${wsHost}/ws/notifications`;
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => setWsStatus('connected');
