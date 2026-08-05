@@ -6,7 +6,10 @@ import { Navbar } from './components/Navbar';
 import { StatCard } from './components/StatCard';
 import { AlertTriageDrawer } from './components/AlertTriageDrawer';
 import { CaseWorkspaceDrawer } from './components/CaseWorkspaceDrawer';
-import { TableSkeleton } from './components/SkeletonLoader';
+import { MitreMatrix } from './components/MitreMatrix';
+import { IocGraphView } from './components/IocGraphView';
+import { GeoAttackMap } from './components/GeoAttackMap';
+import { ReportExporter } from './components/ReportExporter';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -267,11 +270,43 @@ export default function App() {
     }
   };
 
+  const handleExportReport = async (format: 'pdf' | 'txt' | 'json') => {
+    try {
+      const summaryText = await api.getCaseReportText(cases[0]?.id || '');
+      let blob: Blob;
+      let filename: string;
+
+      if (format === 'json') {
+        const payload = {
+          report_title: 'CyberShield-AI-SOC Threat Audit',
+          timestamp: new Date().toISOString(),
+          statistics: metrics?.statistics,
+          open_cases_count: cases.length,
+          alerts_count: alerts.length,
+          report_body: summaryText,
+        };
+        blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        filename = 'executive_soc_threat_report.json';
+      } else {
+        blob = new Blob([summaryText], { type: 'text/plain' });
+        filename = `executive_soc_threat_report.${format}`;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+    } catch (e: any) {
+      alert(`Failed to export report: ${e.message}`);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0b1120] text-slate-300 soc-grid-bg">
+      <div className="flex items-center justify-center min-h-screen bg-[#070c18] text-slate-300 soc-grid-bg">
         <div className="flex flex-col items-center space-y-4">
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-white shadow-xl shadow-blue-500/20 border border-blue-400/30 animate-bounce">
+          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-xl shadow-blue-500/20 border border-blue-400/30 animate-bounce">
             🛡️
           </div>
           <div className="text-sm font-mono text-cyan-400 tracking-wider animate-pulse">
@@ -282,13 +317,13 @@ export default function App() {
     );
   }
 
-  // --- Login Page ---
+  // --- Login Screen ---
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#0b1120] text-slate-100 flex items-center justify-center p-4 soc-grid-bg">
+      <div className="min-h-screen bg-[#070c18] text-slate-100 flex items-center justify-center p-4 soc-grid-bg">
         <div className="glass-panel w-full max-w-md p-8 shadow-2xl space-y-6 border-slate-800">
           <div className="text-center space-y-2">
-            <div className="inline-flex h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-600 items-center justify-center text-white shadow-lg shadow-blue-500/25 border border-blue-400/30 mb-2">
+            <div className="inline-flex h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 items-center justify-center text-white shadow-lg shadow-blue-500/25 border border-blue-400/30 mb-2">
               🛡️
             </div>
             <h1 className="text-2xl font-extrabold tracking-tight text-white">CyberShield-AI-SOC</h1>
@@ -331,13 +366,13 @@ export default function App() {
             <button
               type="submit"
               disabled={authSubmitting}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/25 transition disabled:opacity-50"
+              className="w-full py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/25 transition disabled:opacity-50"
             >
               {authSubmitting ? 'Authenticating Session...' : 'Sign In to SOC Center'}
             </button>
           </form>
 
-          {/* Quick Credential Preset Buttons for Testing */}
+          {/* Quick Preset Credentials */}
           <div className="pt-4 border-t border-slate-800/80 space-y-2">
             <span className="text-[10px] font-mono text-slate-500 block text-center uppercase tracking-wider">Demo Credentials</span>
             <div className="flex space-x-2">
@@ -373,7 +408,7 @@ export default function App() {
     : alerts.filter((a) => a.status === alertFilterStatus);
 
   return (
-    <div className="min-h-screen bg-[#0b1120] text-slate-100 soc-grid-bg flex">
+    <div className="min-h-screen bg-[#070c18] text-slate-100 soc-grid-bg flex">
       {/* Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
@@ -385,9 +420,8 @@ export default function App() {
         setCollapsed={setSidebarCollapsed}
       />
 
-      {/* Main Container Offset by Sidebar */}
+      {/* Main Content Area */}
       <div className={`flex-1 transition-all duration-300 flex flex-col ${sidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
-        {/* Top Navbar */}
         <Navbar
           user={user}
           onLogout={handleLogout}
@@ -395,7 +429,6 @@ export default function App() {
           sidebarCollapsed={sidebarCollapsed}
         />
 
-        {/* Content Body */}
         <main className="mt-16 p-6 flex-1 space-y-6 max-w-7xl mx-auto w-full">
           {/* Quick RFC822 EML Ingestion Banner */}
           <section className="glass-panel p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border-blue-500/20">
@@ -446,6 +479,7 @@ export default function App() {
                   accentColor="emerald"
                   subtitle="Completed email inspection tasks"
                   badgeText="24h"
+                  trendPercentage="+12.4%"
                 />
                 <StatCard
                   title="Unresolved Alerts"
@@ -458,6 +492,7 @@ export default function App() {
                   accentColor="amber"
                   subtitle="Pending analyst triage"
                   badgeText="Action Needed"
+                  trendPercentage="-5.2%"
                 />
                 <StatCard
                   title="Quarantined Threats"
@@ -470,6 +505,7 @@ export default function App() {
                   accentColor="rose"
                   subtitle="Confirmed malicious emails"
                   badgeText="High Risk"
+                  trendPercentage="+8.1%"
                 />
                 <StatCard
                   title="Active SOC Cases"
@@ -482,8 +518,12 @@ export default function App() {
                   accentColor="blue"
                   subtitle="Open incident investigations"
                   badgeText="Active"
+                  trendPercentage="+2"
                 />
               </div>
+
+              {/* Geographic Threat Origin Map */}
+              <GeoAttackMap />
 
               {/* Recent High-Risk Alerts Table */}
               <div className="glass-panel p-6">
@@ -501,23 +541,23 @@ export default function App() {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-900/90 text-slate-400 uppercase font-mono border-b border-slate-800">
+                  <table className="soc-table">
+                    <thead>
                       <tr>
-                        <th className="p-3">Sender</th>
-                        <th className="p-3">Subject</th>
-                        <th className="p-3">Risk Score</th>
-                        <th className="p-3">Status</th>
-                        <th className="p-3 text-right">Action</th>
+                        <th>Sender</th>
+                        <th>Subject</th>
+                        <th>Risk Score</th>
+                        <th>Status</th>
+                        <th className="text-right">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60">
+                    <tbody>
                       {alerts.length > 0 ? (
                         alerts.slice(0, 5).map((a) => (
-                          <tr key={a.id} className="hover:bg-slate-900/50 transition">
-                            <td className="p-3 font-mono text-slate-300">{a.sender}</td>
-                            <td className="p-3 text-slate-200">{a.subject || '(No Subject)'}</td>
-                            <td className="p-3">
+                          <tr key={a.id}>
+                            <td className="font-mono text-slate-300">{a.sender}</td>
+                            <td className="text-slate-200">{a.subject || '(No Subject)'}</td>
+                            <td>
                               <span
                                 className={`px-2.5 py-0.5 rounded-full font-mono font-bold text-[11px] ${
                                   a.risk_score >= 0.8
@@ -530,12 +570,12 @@ export default function App() {
                                 {Math.round(a.risk_score * 100)}%
                               </span>
                             </td>
-                            <td className="p-3">
+                            <td>
                               <span className="px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700/80 font-mono text-[11px]">
                                 {a.status}
                               </span>
                             </td>
-                            <td className="p-3 text-right">
+                            <td className="text-right">
                               <button
                                 onClick={() => handleInspectAlert(a.id)}
                                 className="px-3 py-1 bg-blue-600/80 hover:bg-blue-500 text-white rounded-lg text-xs font-medium transition shadow"
@@ -585,35 +625,35 @@ export default function App() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-900/90 text-slate-400 uppercase font-mono border-b border-slate-800">
+                <table className="soc-table">
+                  <thead>
                     <tr>
-                      <th className="p-3">Alert ID</th>
-                      <th className="p-3">Sender</th>
-                      <th className="p-3">Subject</th>
-                      <th className="p-3">Risk Score</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3 text-right">Action</th>
+                      <th>Alert ID</th>
+                      <th>Sender</th>
+                      <th>Subject</th>
+                      <th>Risk Score</th>
+                      <th>Status</th>
+                      <th className="text-right">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
+                  <tbody>
                     {filteredAlerts.length > 0 ? (
                       filteredAlerts.map((a) => (
-                        <tr key={a.id} className="hover:bg-slate-900/50 transition">
-                          <td className="p-3 font-mono text-slate-400">{a.id.slice(0, 8)}...</td>
-                          <td className="p-3 font-mono text-slate-300">{a.sender}</td>
-                          <td className="p-3 text-slate-200">{a.subject || '(No Subject)'}</td>
-                          <td className="p-3">
+                        <tr key={a.id}>
+                          <td className="font-mono text-slate-400">{a.id.slice(0, 8)}...</td>
+                          <td className="font-mono text-slate-300">{a.sender}</td>
+                          <td className="text-slate-200">{a.subject || '(No Subject)'}</td>
+                          <td>
                             <span className="font-bold text-rose-400 font-mono text-sm">
                               {Math.round(a.risk_score * 100)}%
                             </span>
                           </td>
-                          <td className="p-3">
+                          <td>
                             <span className="px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700/80 font-mono text-[11px]">
                               {a.status}
                             </span>
                           </td>
-                          <td className="p-3 text-right">
+                          <td className="text-right">
                             <button
                               onClick={() => handleInspectAlert(a.id)}
                               className="px-3 py-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-lg text-xs font-semibold shadow transition"
@@ -674,23 +714,23 @@ export default function App() {
               <div className="glass-panel p-6">
                 <h3 className="font-bold text-lg text-white mb-4">Active Incident Cases Workspace</h3>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-900/90 text-slate-400 uppercase font-mono border-b border-slate-800">
+                  <table className="soc-table">
+                    <thead>
                       <tr>
-                        <th className="p-3">Case ID</th>
-                        <th className="p-3">Title</th>
-                        <th className="p-3">Severity</th>
-                        <th className="p-3">Status</th>
-                        <th className="p-3 text-right">Action</th>
+                        <th>Case ID</th>
+                        <th>Title</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                        <th className="text-right">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60">
+                    <tbody>
                       {cases.length > 0 ? (
                         cases.map((c) => (
-                          <tr key={c.id} className="hover:bg-slate-900/50 transition">
-                            <td className="p-3 font-mono text-slate-400">{c.id.slice(0, 8)}...</td>
-                            <td className="p-3 text-slate-200 font-medium">{c.title}</td>
-                            <td className="p-3">
+                          <tr key={c.id}>
+                            <td className="font-mono text-slate-400">{c.id.slice(0, 8)}...</td>
+                            <td className="text-slate-200 font-medium">{c.title}</td>
+                            <td>
                               <span
                                 className={`px-2.5 py-0.5 rounded-full font-mono text-[11px] font-bold ${
                                   c.severity === 'Critical'
@@ -703,12 +743,12 @@ export default function App() {
                                 {c.severity}
                               </span>
                             </td>
-                            <td className="p-3">
+                            <td>
                               <span className="px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-300 font-mono text-[11px]">
                                 {c.status}
                               </span>
                             </td>
-                            <td className="p-3 text-right">
+                            <td className="text-right">
                               <button
                                 onClick={() => handleInspectCase(c.id)}
                                 className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow transition"
@@ -732,9 +772,15 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 4: Threat Intelligence Explorer */}
+          {/* TAB 4: Threat Intelligence Explorer & MITRE Matrix */}
           {activeTab === 'threat_intel' && (
             <div className="space-y-6">
+              {/* MITRE ATT&CK Framework Navigator */}
+              <MitreMatrix />
+
+              {/* IOC Relationship Graph View */}
+              <IocGraphView />
+
               <div className="glass-panel p-6 space-y-4">
                 <div>
                   <h3 className="font-bold text-lg text-white">IOC Threat Intelligence Explorer</h3>
@@ -810,24 +856,24 @@ export default function App() {
             <div className="glass-panel p-6 space-y-4">
               <h3 className="font-bold text-lg text-white">Live Celery Task Execution Monitor</h3>
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-slate-900/90 text-slate-400 uppercase border-b border-slate-800">
+                <table className="soc-table">
+                  <thead>
                     <tr>
-                      <th className="p-3">Task ID</th>
-                      <th className="p-3">Task Type</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3">Retries</th>
-                      <th className="p-3">Created At</th>
+                      <th>Task ID</th>
+                      <th>Task Type</th>
+                      <th>Status</th>
+                      <th>Retries</th>
+                      <th>Created At</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
+                  <tbody>
                     {tasks.map((t) => (
-                      <tr key={t.id} className="hover:bg-slate-900/50 transition">
-                        <td className="p-3 text-slate-300">{t.id.slice(0, 12)}...</td>
-                        <td className="p-3 text-slate-400">{t.task_type}</td>
-                        <td className="p-3">
+                      <tr key={t.id}>
+                        <td className="text-slate-300 font-mono">{t.id.slice(0, 12)}...</td>
+                        <td className="text-slate-400 font-mono">{t.task_type}</td>
+                        <td>
                           <span
-                            className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] ${
+                            className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] font-mono ${
                               t.status === 'Completed'
                                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                                 : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
@@ -836,8 +882,8 @@ export default function App() {
                             {t.status}
                           </span>
                         </td>
-                        <td className="p-3 text-slate-400">{t.retry_count}</td>
-                        <td className="p-3 text-slate-500">{t.created_at}</td>
+                        <td className="text-slate-400 font-mono">{t.retry_count}</td>
+                        <td className="text-slate-500 font-mono">{t.created_at}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -849,24 +895,10 @@ export default function App() {
           {/* TAB 6: Analytics & Executive Reports */}
           {activeTab === 'analytics' && (
             <div className="space-y-6">
-              <div className="glass-panel p-6 space-y-4">
-                <h3 className="font-bold text-lg text-white">Executive Threat Analytics & PDF Report Exporter</h3>
-                <p className="text-xs text-slate-400">Generate and download formal executive summary reports for SOC management.</p>
-                <button
-                  onClick={async () => {
-                    const summary = await api.getCaseReportText(cases[0]?.id || '');
-                    const blob = new Blob([summary], { type: 'text/plain' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'executive_soc_threat_summary.txt';
-                    a.click();
-                  }}
-                  className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold rounded-xl shadow transition"
-                >
-                  Export Executive Threat Report (.txt)
-                </button>
-              </div>
+              {/* Executive & Audit Report Generator */}
+              <ReportExporter onExport={handleExportReport} />
+
+              <GeoAttackMap />
             </div>
           )}
 
@@ -933,20 +965,20 @@ export default function App() {
                   </form>
 
                   <div className="overflow-x-auto pt-2">
-                    <table className="w-full text-left text-xs font-mono">
-                      <thead className="bg-slate-900/90 text-slate-400 uppercase">
+                    <table className="soc-table">
+                      <thead>
                         <tr>
-                          <th className="p-3">User Email</th>
-                          <th className="p-3">Role</th>
-                          <th className="p-3">Status</th>
+                          <th>User Email</th>
+                          <th>Role</th>
+                          <th>Status</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800/60">
+                      <tbody>
                         {usersList.map((u) => (
-                          <tr key={u.id} className="hover:bg-slate-900/50">
-                            <td className="p-3 text-slate-300">{u.email}</td>
-                            <td className="p-3 text-slate-400">{u.role}</td>
-                            <td className="p-3 text-emerald-400">{u.is_active ? 'Active' : 'Inactive'}</td>
+                          <tr key={u.id}>
+                            <td className="text-slate-300 font-mono">{u.email}</td>
+                            <td className="text-slate-400 font-mono">{u.role}</td>
+                            <td className="text-emerald-400 font-mono">{u.is_active ? 'Active' : 'Inactive'}</td>
                           </tr>
                         ))}
                       </tbody>
