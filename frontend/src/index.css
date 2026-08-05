@@ -1,19 +1,22 @@
 @import "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap";
 
 :root {
-  --soc-bg: #0b1120;
-  --soc-surface: #111827;
-  --soc-surface-hover: #1f2937;
-  --soc-border: rgba(255, 255, 255, 0.08);
-  --soc-border-active: rgba(59, 130, 246, 0.4);
+  --soc-bg: #070c18;
+  --soc-sidebar-bg: #0b1120;
+  --soc-surface: #0f172a;
+  --soc-surface-hover: #1e293b;
+  --soc-card-bg: rgba(15, 23, 42, 0.75);
+  --soc-border: rgba(255, 255, 255, 0.07);
+  --soc-border-hover: rgba(59, 130, 246, 0.35);
   --soc-primary: #3b82f6;
   --soc-primary-glow: rgba(59, 130, 246, 0.25);
   --soc-cyber-teal: #06b6d4;
   --soc-success: #10b981;
   --soc-warning: #f59e0b;
   --soc-critical: #ef4444;
-  --soc-text: #f8fafc;
+  --soc-text-main: #f8fafc;
   --soc-text-muted: #94a3b8;
+  --soc-text-dim: #64748b;
 }
 
 * {
@@ -23,54 +26,55 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: var(--soc-bg);
-  color: var(--soc-text);
+  color: var(--soc-text-main);
   min-height: 100vh;
   overflow-x: hidden;
+  letter-spacing: -0.01em;
 }
 
 code, pre, .font-mono {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Background Cyber Mesh */
+/* Background Grid Mesh */
 .soc-grid-bg {
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
-    radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.05) 0%, transparent 50%),
-    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 90% 20%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
   background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
 }
 
 /* Glassmorphism Containers */
 .glass-panel {
-  background: rgba(17, 24, 39, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--soc-card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--soc-border);
-  border-radius: 0.75rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 0.875rem;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 0 1px 1px rgba(255, 255, 255, 0.03) inset;
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-panel-hover:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.4), 0 0 15px rgba(59, 130, 246, 0.1);
+  border-color: var(--soc-border-hover);
+  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.12);
 }
 
 .glass-card {
-  background: rgba(31, 41, 55, 0.4);
-  backdrop-filter: blur(8px);
+  background: rgba(30, 41, 59, 0.45);
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 0.5rem;
+  border-radius: 0.625rem;
   transition: all 0.2s ease;
 }
 
 .glass-card:hover {
-  background: rgba(31, 41, 55, 0.6);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 /* Threat Severity Badges */
@@ -98,33 +102,67 @@ code, pre, .font-mono {
   border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
-/* Glow Effects */
-.glow-primary {
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);
+/* Enterprise Datatable Styles */
+.soc-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
-.glow-critical {
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+.soc-table th {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  color: #94a3b8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.glow-success {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+.soc-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background-color 0.15s ease;
 }
 
-/* Skeleton Loading Animation */
-@keyframes skeleton-pulse {
-  0%, 100% {
-    opacity: 0.4;
+.soc-table tr:hover td {
+  background-color: rgba(30, 41, 59, 0.5);
+}
+
+/* Accessibility Focus Ring Standard */
+:focus-visible {
+  outline: none;
+  ring: 2px;
+  box-shadow: 0 0 0 2px var(--soc-bg), 0 0 0 4px var(--soc-primary);
+}
+
+/* Shimmer Loading Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
   }
-  50% {
-    opacity: 0.8;
+  100% {
+    background-position: 200% 0;
   }
 }
 
-.skeleton {
-  animation: skeleton-pulse 1.8s ease-in-out infinite;
-  background: linear-gradient(90deg, rgba(31, 41, 55, 0.6) 0%, rgba(55, 65, 81, 0.8) 50%, rgba(31, 41, 55, 0.6) 100%);
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(30, 41, 59, 0.4) 0%,
+    rgba(51, 65, 85, 0.7) 50%,
+    rgba(30, 41, 59, 0.4) 100%
+  );
   background-size: 200% 100%;
+  animation: shimmer 1.8s infinite ease-in-out;
+  border-radius: 0.5rem;
 }
 
 /* Custom Scrollbar */
@@ -134,7 +172,7 @@ code, pre, .font-mono {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0b1120;
+  background: #070c18;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -146,7 +184,7 @@ code, pre, .font-mono {
   background: #334155;
 }
 
-/* Modal / Drawer Animation */
+/* Modal / Drawer Animations */
 @keyframes drawerSlideIn {
   from {
     transform: translateX(100%);
