@@ -19,8 +19,10 @@ echo "Binding FastAPI web server to 0.0.0.0:${LISTEN_PORT}"
 # Run database migrations if alembic is configured
 if [ -f "backend/alembic.ini" ]; then
     echo "Executing Alembic database migrations..."
-    if ! python -m alembic -c backend/alembic.ini upgrade head; then
-        echo "ERROR: Alembic database migration failed!"
+    if command -v alembic >/dev/null 2>&1; then
+        alembic -c backend/alembic.ini upgrade head
+    else
+        echo "Alembic executable not found."
         exit 1
     fi
     echo "Alembic database migrations completed successfully."
