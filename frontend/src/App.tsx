@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api, getAuthToken, removeAuthToken, setAuthToken } from './api';
-import { User, AlertSummary, CaseSummary, TaskRecord, ProviderHealth } from './types';
+import { User, AlertSummary, AlertDetail, CaseSummary, CaseDetail, TaskRecord, ProviderHealth, MetricsSummary } from './types';
 import { Sidebar } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
 import { StatCard } from './components/StatCard';
@@ -24,7 +24,7 @@ export default function App() {
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
   // Dashboard Data State
-  const [metrics, setMetrics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
   const [alerts, setAlerts] = useState<AlertSummary[]>([]);
   const [cases, setCases] = useState<CaseSummary[]>([]);
   const [tasks, setTasks] = useState<TaskRecord[]>([]);
@@ -32,8 +32,8 @@ export default function App() {
   const [wsStatus, setWsStatus] = useState<'connected' | 'disconnected'>('disconnected');
 
   // Selected Detail Drawers State
-  const [selectedAlert, setSelectedAlert] = useState<any>(null);
-  const [selectedCase, setSelectedCase] = useState<any>(null);
+  const [selectedAlert, setSelectedAlert] = useState<AlertDetail | null>(null);
+  const [selectedCase, setSelectedCase] = useState<CaseDetail | null>(null);
   const [iocSearch, setIocSearch] = useState('');
   const [iocResult, setIocResult] = useState<any>(null);
   const [triageComment, setTriageComment] = useState('');
@@ -43,7 +43,7 @@ export default function App() {
   const [ingestStatus, setIngestStatus] = useState<string>('');
 
   // Admin / User Creation State
-  const [usersList, setUsersList] = useState<any[]>([]);
+  const [usersList, setUsersList] = useState<User[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
