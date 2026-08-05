@@ -29,15 +29,13 @@ def get_db():
         db.close()
 
 def init_db():
-    """Ensures all database tables exist and seeds initial default users."""
+    """Seeds default system users if the database tables exist."""
     try:
-        from app.domain.models import Base, User
+        from app.domain.models import User
         from app.adapters.security import get_password_hash
     except ImportError:
-        from backend.app.domain.models import Base, User
+        from backend.app.domain.models import User
         from backend.app.adapters.security import get_password_hash
-
-    Base.metadata.create_all(bind=engine)
 
     db = SessionLocal()
     try:
@@ -60,10 +58,10 @@ def init_db():
                 is_active=True
             )
             db.add(admin)
+
         db.commit()
     except Exception as e:
         db.rollback()
-        print(f"Database seed initialization notice: {e}")
+        print(f"init_db notice: {e}")
     finally:
         db.close()
-
