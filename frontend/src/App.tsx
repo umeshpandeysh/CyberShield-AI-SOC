@@ -246,6 +246,19 @@ export default function App() {
     }
   };
 
+  const handlePivotIOC = async (ioc: string) => {
+    setSelectedAlert(null);
+    setSelectedCase(null);
+    setIocSearch(ioc);
+    setActiveTab('threat_intel');
+    try {
+      const res = await api.enrichSingleIOC(ioc);
+      setIocResult(res);
+    } catch (e: any) {
+      console.warn(`IOC Pivot notice: ${e.message}`);
+    }
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -793,7 +806,7 @@ export default function App() {
                     required
                     value={iocSearch}
                     onChange={(e) => setIocSearch(e.target.value)}
-                    className="flex-1 bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    className="flex-1 bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono"
                   />
                   <button
                     type="submit"
@@ -920,7 +933,7 @@ export default function App() {
                       max="1"
                       value={confidenceThreshold}
                       onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value))}
-                      className="w-full bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                      className="w-full bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
                     />
                   </div>
                   <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow transition">
@@ -998,6 +1011,7 @@ export default function App() {
         triageComment={triageComment}
         setTriageComment={setTriageComment}
         onTriage={handleTriageAlert}
+        onPivotIOC={handlePivotIOC}
       />
 
       {/* Master-detail Case Workspace Drawer */}
@@ -1007,6 +1021,7 @@ export default function App() {
         newNoteContent={newNoteContent}
         setNewNoteContent={setNewNoteContent}
         onAddNote={handleAddNote}
+        onPivotIOC={handlePivotIOC}
       />
     </div>
   );
