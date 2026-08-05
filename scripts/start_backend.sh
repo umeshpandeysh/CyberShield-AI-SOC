@@ -19,7 +19,9 @@ echo "Binding FastAPI web server to 0.0.0.0:${LISTEN_PORT}"
 # Run database migrations if alembic is configured
 if [ -f "backend/alembic.ini" ]; then
     echo "Executing Alembic database migrations..."
-    python3 -c "
+    
+    # Determine migration strategy based on database state
+    MIGRATION_ACTION=$(python3 -c "
 import sys, os
 from sqlalchemy import inspect, create_engine
 sys.path.insert(0, os.path.abspath('backend'))
@@ -35,22 +37,24 @@ try:
     inspector = inspect(engine)
     tables = inspector.get_table_names()
 
-    if 'users' in tables and 'alembic_version' not in tables:
-        print('Existing database schema detected without Alembic version tracking. Stamping Alembic head...')
-        os.system('alembic -c backend/alembic.ini stamp head')
-    elif 'users' in tables:
-        print('Existing database schema detected. Running Alembic upgrade head...')
-        res = os.system('alembic -c backend/alembic.ini upgrade head')
-        if res != 0:
-            print('Upgrade encountered conflict; stamping head for schema compatibility.')
-            os.system('alembic -c backend/alembic.ini stamp head')
+    if 'alembic_version' in tables:
+        print('UPGRADE')
+    elif any(t in tables for t in ['users', 'emails', 'alerts']):
+        print('STAMP_AND_UPGRADE')
     else:
-        print('Fresh database detected. Executing full Alembic migration chain...')
-        os.system('alembic -c backend/alembic.ini upgrade head')
-except Exception as err:
-    print(f'Migration inspection notice: {err}')
-    os.system('alembic -c backend/alembic.ini upgrade head')
-"
+        print('UPGRADE')
+except Exception as e:
+    print('UPGRADE')
+")
+
+    if [ "$MIGRATION_ACTION" = "STAMP_AND_UPGRADE" ]; then
+        echo "Existing database detected without Alembic history. Stamping head..."
+        alembic -c backend/alembic.ini stamp head || { echo "ERROR: Alembic stamp failed!"; exit 1; }
+        alembic -c backend/alembic.ini upgrade head || { echo "ERROR: Alembic upgrade failed!"; exit 1; }
+    else
+        echo "Database migration status check complete. Executing Alembic upgrade head..."
+        alembic -c backend/alembic.ini upgrade head || { echo "ERROR: Alembic upgrade failed!"; exit 1; }
+    fi
     echo "Alembic database migrations completed successfully."
 fi
 
