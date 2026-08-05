@@ -1,0 +1,35 @@
+From: "Urgent Security Center" <support-security-alert@fakebank-login.com>
+To: "Employee" <victim@company.com>
+Subject: URGENT: Verification Required for Suspicious Bank Account Activity
+Date: Mon, 01 Aug 2026 21:13:55 +0000
+Message-ID: <202608012113.a9f82d0e@mail.attacker.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="----=_NextPart_000_001B_01D9B0A2.5C789A00"
+
+This is a multi-part message in MIME format.
+
+------=_NextPart_000_001B_01D9B0A2.5C789A00
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Dear Valued Customer,
+
+We detected an unauthorized login attempt on your online bank account from IP address 192.168.99.1.
+Your account access has been temporarily restricted for security reasons.
+
+To restore full access, please verify your credentials immediately by visiting our secure portal:
+http://fakebank-login.com/verify
+
+Please open the attached security report (invoice_pdf.exe) for further instructions.
+
+Thank you,
+Customer Security Operations Team
+
+------=_NextPart_000_001B_01D9B0A2.5C789A00
+Content-Type: application/x-msdownload; name="invoice_pdf.exe"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="invoice_pdf.exe"
+
+TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAgAAAGA0AANwTjAO6gAQAAAA
+------=_NextPart_000_001B_01D9B0A2.5C789A00--

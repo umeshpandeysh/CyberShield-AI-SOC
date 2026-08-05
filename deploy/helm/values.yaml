@@ -1,0 +1,35 @@
+replicaCount: 3
+
+image:
+  repository: cybershield-backend
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8000
+
+postgresql:
+  enabled: true
+  host: "postgres-service"
+  port: 5432
+  database: "cybershield_db"
+
+redis:
+  enabled: true
+  host: "redis-service"
+  port: 6379
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 75
